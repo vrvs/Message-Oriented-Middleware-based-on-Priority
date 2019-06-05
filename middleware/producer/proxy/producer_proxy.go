@@ -1,8 +1,8 @@
 package proxy
 
 import (
-	"Message-Oriented-Middleware-based-on-Priority/middleware/producer/marshaller"
-	"Message-Oriented-Middleware-based-on-Priority/middleware/producer/models"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
 	"errors"
 	"net"

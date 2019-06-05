@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"Message-Oriented-Middleware-based-on-Priority/middleware/producer/marshaller"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"encoding/json"
 	"log"
 	"net"

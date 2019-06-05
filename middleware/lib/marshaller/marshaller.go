@@ -1,7 +1,7 @@
 package marshaller
 
 import (
-	"Message-Oriented-Middleware-based-on-Priority/middleware/producer/models"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
 	"log"
 )
