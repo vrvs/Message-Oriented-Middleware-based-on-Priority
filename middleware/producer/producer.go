@@ -41,20 +41,20 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 	}, nil
 }
 
-func (p publisher) QueueDeclare(queueName string, maxPriority int64) error {
+func (p publisher) TopicDeclare(topicName string, maxPriority int64) error {
 	msg := models.Message{
-		Head:        "QueueDeclare",
-		QueueName:   queueName,
+		Head:        "TopicDeclare",
+		TopicName:   topicName,
 		MaxPriority: maxPriority,
 	}
 
 	return p.send(msg)
 }
 
-func (p publisher) Publish(queueName string, content Publishing) error {
+func (p publisher) Publish(topicName string, content Publishing) error {
 	msg := models.Message{
 		Head:            "Publish",
-		QueueName:       queueName,
+		TopicName:       topicName,
 		MessagePriority: content.Priority,
 		Body:            marsh.Marshall(content.Body),
 	}

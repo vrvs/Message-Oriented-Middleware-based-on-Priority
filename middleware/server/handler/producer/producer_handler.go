@@ -35,24 +35,23 @@ func NewProducerHandler() error {
 		decoder: jsonDecoder,
 	}
 
-	invoke()
+	listen()
 
 	return nil
 }
 
-func invoke() {
+func listen() {
 	marshaller := marshaller.NewMarshaller()
 
 	for {
 		msg := receive()
 
-		messageUnmarshalled := marshaller.Unmarshall(msg)
-
-		switch messageUnmarshalled.Head {
-		case "QueueDeclare":
-			// chama método do broker
+		msgUnmarshalled := marshaller.Unmarshall(msg)
+		switch msgUnmarshalled.Head {
+		case "TopicDeclare":
+			// broker.TopicDeclare(msgUnmarshalled.TopicName, msgUnmarshalled.MaxPriority)
 		case "Publish":
-			// chama método do broker
+			// broker.Publish(msgUnmarshalled.TopicName, msgUnmarshalled.MessagePriority, msgUnmarshalled.Body)
 		}
 
 		// adicionar um send para resposta do cliente
