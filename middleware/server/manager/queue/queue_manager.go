@@ -8,13 +8,20 @@ import (
 	"sync"
 )
 
-type SafePriorityQueue struct {
+type safePriorityQueue struct {
 	priorityQueue priority.PriorityQueue
-	lock          *sync.Mutex
+	lock          *sync.RWMutex
 }
 type QueueManager struct {
-	queues map[string]*SafePriorityQueue
+	queues map[string]*safePriorityQueue
 	lock   *sync.RWMutex
+}
+
+func NewQueueManager() *QueueManager {
+	return &QueueManager{
+		queues: make(map[string]*safePriorityQueue),
+		lock:   &sync.RWMutex{},
+	}
 }
 
 func (qm *QueueManager) Pop(topic string) (interface{}, error) {
@@ -39,9 +46,9 @@ func (qm *QueueManager) Push(topic string, item interface{}) error {
 	qm.lock.RUnlock()
 	if !ok {
 		qm.lock.Lock()
-		qm.queues[topic] = &SafePriorityQueue{
+		qm.queues[topic] = &safePriorityQueue{
 			priorityQueue: make(priority.PriorityQueue, 0),
-			lock:          &sync.Mutex{},
+			lock:          &sync.RWMutex{},
 		}
 		qm.lock.Unlock()
 	}
@@ -54,21 +61,34 @@ func (qm *QueueManager) Push(topic string, item interface{}) error {
 	return nil
 }
 
+func (qm *QueueManager) Len(topic string) int {
+	qm.lock.RLock()
+	defer qm.lock.RUnlock()
+	queue, ok := qm.queues[topic]
+	if !ok {
+		return 0
+	}
+	queue.lock.RLock()
+	len := queue.priorityQueue.Len()
+	queue.lock.RUnlock()
+	return len
+}
+
 func main() {
 	manager := &QueueManager{
-		queues: make(map[string]*SafePriorityQueue),
+		queues: make(map[string]*safePriorityQueue),
 		lock:   &sync.RWMutex{},
 	}
 	item := &priority.Item{
-		Value:    nil,
+		Value:    "",
 		Priority: 7,
 	}
 	item2 := &priority.Item{
-		Value:    nil,
+		Value:    "",
 		Priority: 9,
 	}
 	item3 := &priority.Item{
-		Value:    nil,
+		Value:    "",
 		Priority: 4,
 	}
 	manager.Push("hello", item)

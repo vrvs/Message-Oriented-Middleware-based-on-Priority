@@ -5,7 +5,7 @@ import (
 )
 
 type Item struct {
-	Value    []byte
+	Value    string
 	Priority int
 	Index    int
 }
@@ -42,7 +42,7 @@ func (pq *PriorityQueue) Pop() interface{} {
 	return item
 }
 
-func (pq *PriorityQueue) update(item *Item, value []byte, priority int) {
+func (pq *PriorityQueue) update(item *Item, value string, priority int) {
 	item.Value = value
 	item.Priority = priority
 	heap.Fix(pq, item.Index)
