@@ -3,61 +3,56 @@ package handler
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"encoding/json"
+	"bufio"
+	"fmt"
 	"log"
 	"net"
+
+	convert "github.com/mitchellh/mapstructure"
 )
 
-type consumerHandler struct {
-	conn    net.Conn
-	encoder *json.Encoder
-	decoder *json.Decoder
-}
-
-func NewConsumerHandler() (*consumerHandler, error) {
+func ServerConsumerHandler() error {
+	fmt.Println("Ligando consumer server")
 	ln, err := net.Listen("tcp", "localhost:5556")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	conn, err := ln.Accept()
-	if err != nil {
-		return nil, err
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			log.Println("Error accepting request:", err)
+		}
+
+		go handleConsumerRequest(conn)
 	}
 
-	jsonEncoder := json.NewEncoder(conn)
-	jsonDecoder := json.NewDecoder(conn)
-
-	return &consumerHandler{
-		conn:    conn,
-		encoder: jsonEncoder,
-		decoder: jsonDecoder,
-	}, nil
+	return nil
 }
 
-func (c *consumerHandler) Listen() {
+func handleConsumerRequest(conn net.Conn) {
+	fmt.Println("Escutando consumer")
 	marshaller := marshaller.NewMarshaller()
 
 	for {
-		msg := c.receive()
-		msgUnmarshalled := marshaller.Unmarshall(msg)
-		message := msgUnmarshalled.(models.Message)
+		// will listen for message to process ending in newline (\n)
+		msg, _ := bufio.NewReader(conn).ReadString('\n')
+
+		// process for string received
+		msgUnmarshalled := marshaller.Unmarshall([]byte(msg))
+
+		message := models.Message{}
+		convert.Decode(msgUnmarshalled, &message)
+
 		switch message.Head {
 		case "TopicRegister":
+			fmt.Println(message.TopicName)
 			// broker.TopicRegister(message.TopicName, message.Conn)
 		default:
 		}
+
+		// send new string back to client
+
+		// conn.Write([]byte(newmessage + "\n"))
 	}
-}
-
-func (c *consumerHandler) receive() []byte {
-	var msg []byte
-	err := prodHandler.decoder.Decode(&msg)
-
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
-
-	return msg
 }

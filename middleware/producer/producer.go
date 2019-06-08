@@ -3,9 +3,10 @@ package producer
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
+	"time"
 )
 
 var marsh = marshaller.NewMarshaller()
@@ -21,9 +22,7 @@ type Publisher interface {
 }
 
 type publisher struct {
-	conn    net.Conn
-	encoder *json.Encoder
-	decoder *json.Decoder
+	conn net.Conn
 }
 
 func NewPublisher(conn net.Conn) (Publisher, error) {
@@ -31,27 +30,22 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 		return nil, errors.New("error: empty conn")
 	}
 
-	jsonEncoder := json.NewEncoder(conn)
-	jsonDecoder := json.NewDecoder(conn)
-
-	return publisher{
-		conn:    conn,
-		encoder: jsonEncoder,
-		decoder: jsonDecoder,
+	return &publisher{
+		conn: conn,
 	}, nil
 }
 
-func (p publisher) TopicDeclare(topicName string, maxPriority int64) {
+func (p *publisher) TopicDeclare(topicName string, maxPriority int64) {
 	msg := models.Message{
 		Head:        "TopicDeclare",
 		TopicName:   topicName,
 		MaxPriority: maxPriority,
 	}
 
-	go p.send(msg)
+	p.send(msg)
 }
 
-func (p publisher) Publish(topicName string, content Publishing) {
+func (p *publisher) Publish(topicName string, content Publishing) {
 	msg := models.Message{
 		Head:            "Publish",
 		TopicName:       topicName,
@@ -59,17 +53,17 @@ func (p publisher) Publish(topicName string, content Publishing) {
 		Body:            marsh.Marshall(content.Body),
 	}
 
-	go p.send(msg)
+	p.send(msg)
 }
 
-func (p publisher) send(msg models.Message) error {
+func (p *publisher) send(msg models.Message) error {
 	msgMarshalled := marsh.Marshall(msg)
-
-	err := p.encoder.Encode(msgMarshalled)
-
-	if err != nil {
-		return err
-	}
+	message := string(msgMarshalled)
+	time.Sleep(5000)
+	fmt.Fprintf(p.conn, message+"\n")
 
 	return nil
 }
+
+// listen for reply
+//message, _ := bufio.NewReader(conn).ReadString('\n')

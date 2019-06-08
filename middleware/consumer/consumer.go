@@ -3,8 +3,9 @@ package consumer
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"encoding/json"
+	"bufio"
 	"errors"
+	"fmt"
 	"net"
 )
 
@@ -12,13 +13,11 @@ var marsh = marshaller.NewMarshaller()
 
 type Subscriber interface {
 	Subscribe(topicName string, conn net.Conn) error
-	Receive() ([]byte, error)
+	Receive() []byte
 }
 
 type subscriber struct {
-	conn    net.Conn
-	encoder *json.Encoder
-	decoder *json.Decoder
+	conn net.Conn
 }
 
 func NewSubscriber(conn net.Conn) (Subscriber, error) {
@@ -26,13 +25,8 @@ func NewSubscriber(conn net.Conn) (Subscriber, error) {
 		return nil, errors.New("error: empty conn")
 	}
 
-	jsonEncoder := json.NewEncoder(conn)
-	jsonDecoder := json.NewDecoder(conn)
-
 	return &subscriber{
-		conn:    conn,
-		encoder: jsonEncoder,
-		decoder: jsonDecoder,
+		conn: conn,
 	}, nil
 }
 
@@ -47,44 +41,22 @@ func (s *subscriber) Subscribe(topicName string, conn net.Conn) error {
 		Conn:      conn,
 	}
 
-	go s.send(msg)
+	s.send(msg)
 
 	return nil
 }
 
-func (s *subscriber) Receive() ([]byte, error) {
-	msg, err := s.receive()
+func (s *subscriber) Receive() []byte {
+	message, _ := bufio.NewReader(s.conn).ReadString('\n')
 
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	return *msg, nil
-}
-
-func (s *subscriber) send(msg models.Message) error {
-	msgMarshalled := marsh.Marshall(msg)
-
-	err := s.encoder.Encode(msgMarshalled)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *subscriber) receive() (*[]byte, error) {
-	var msg []byte
-	err := s.decoder.Decode(&msg)
-
-	if err != nil {
-		return nil, err
-	}
-
-	msgUnmarshalled := marsh.Unmarshall(msg)
+	msgUnmarshalled := marsh.Unmarshall([]byte(message))
 
 	ans := msgUnmarshalled.(models.Subscribing)
 
-	return &ans.Body, nil
+	return ans.Body
+}
+
+func (s *subscriber) send(msg models.Message) {
+	msgMarshalled := marsh.Marshall(msg)
+	fmt.Fprintf(s.conn, string(msgMarshalled)+"\n")
 }
