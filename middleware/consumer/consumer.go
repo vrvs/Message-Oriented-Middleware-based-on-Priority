@@ -1,4 +1,4 @@
-package proxy
+package consumer
 
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
@@ -6,18 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
-	"log"
 )
 
 var marsh = marshaller.NewMarshaller()
 
-type Subscribing struct {
-	Body     interface{}
-}
-
 type Subscriber interface {
-	QueueRegister(queueName string) error
-	Subscribe() (Subscribing, error)
+	Subscribe(topicName string, conn net.Conn) error
+	Receive() ([]byte, error)
 }
 
 type subscriber struct {
@@ -34,33 +29,40 @@ func NewSubscriber(conn net.Conn) (Subscriber, error) {
 	jsonEncoder := json.NewEncoder(conn)
 	jsonDecoder := json.NewDecoder(conn)
 
-	return subscriber{
+	return &subscriber{
 		conn:    conn,
 		encoder: jsonEncoder,
 		decoder: jsonDecoder,
 	}, nil
 }
 
-func (s subscriber) QueueRegister(queueName string) error {
-	msg := models.Message{
-		Head:        "QueueRegister",
-		QueueName:   queueName,
+func (s *subscriber) Subscribe(topicName string, conn net.Conn) error {
+	if conn == nil {
+		return errors.New("error: empty conn")
 	}
 
-	return s.send(msg)
+	msg := models.Message{
+		Head:      "Subscribe",
+		TopicName: topicName,
+		Conn:      conn,
+	}
+
+	go s.send(msg)
+
+	return nil
 }
 
-func (s subscriber) Subscribe() (Subscribing, error) {
-	msg := s.listen()
+func (s *subscriber) Receive() ([]byte, error) {
+	msg, err := s.receive()
 
-	messageUnmarshalled := marsh.Unmarshall(msg)
-	
-	return Subscribing {
-		Body: messageUnmarshalled.Body,
-	}, nil
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	return *msg, nil
 }
 
-func (s subscriber) send(msg models.Message) error {
+func (s *subscriber) send(msg models.Message) error {
 	msgMarshalled := marsh.Marshall(msg)
 
 	err := s.encoder.Encode(msgMarshalled)
@@ -72,14 +74,17 @@ func (s subscriber) send(msg models.Message) error {
 	return nil
 }
 
-func (s subscriber) listen() []byte {
+func (s *subscriber) receive() (*[]byte, error) {
 	var msg []byte
 	err := s.decoder.Decode(&msg)
 
 	if err != nil {
-		log.Fatal(err)
-		return nil
+		return nil, err
 	}
 
-	return msg
+	msgUnmarshalled := marsh.Unmarshall(msg)
+
+	ans := msgUnmarshalled.(models.Subscribing)
+
+	return &ans.Body, nil
 }

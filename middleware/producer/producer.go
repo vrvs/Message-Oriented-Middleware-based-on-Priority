@@ -1,4 +1,4 @@
-package proxy
+package producer
 
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
@@ -16,8 +16,8 @@ type Publishing struct {
 }
 
 type Publisher interface {
-	QueueDeclare(queueName string, maxPriority int64) error
-	Publish(queueName string, content Publishing) error
+	TopicDeclare(topicName string, maxPriority int64)
+	Publish(queueName string, content Publishing)
 }
 
 type publisher struct {
@@ -41,17 +41,17 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 	}, nil
 }
 
-func (p publisher) TopicDeclare(topicName string, maxPriority int64) error {
+func (p publisher) TopicDeclare(topicName string, maxPriority int64) {
 	msg := models.Message{
 		Head:        "TopicDeclare",
 		TopicName:   topicName,
 		MaxPriority: maxPriority,
 	}
 
-	return p.send(msg)
+	go p.send(msg)
 }
 
-func (p publisher) Publish(topicName string, content Publishing) error {
+func (p publisher) Publish(topicName string, content Publishing) {
 	msg := models.Message{
 		Head:            "Publish",
 		TopicName:       topicName,
@@ -59,7 +59,7 @@ func (p publisher) Publish(topicName string, content Publishing) error {
 		Body:            marsh.Marshall(content.Body),
 	}
 
-	return p.send(msg)
+	go p.send(msg)
 }
 
 func (p publisher) send(msg models.Message) error {

@@ -1,14 +1,13 @@
 package marshaller
 
 import (
-	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
 	"log"
 )
 
 type Marshaller interface {
 	Marshall(message interface{}) []byte
-	Unmarshall(message []byte) *models.Message
+	Unmarshall(message []byte) interface{}
 }
 
 type marshaller struct{}
@@ -28,8 +27,8 @@ func (m marshaller) Marshall(message interface{}) []byte {
 	return msgMarshalled
 }
 
-func (m marshaller) Unmarshall(message []byte) *models.Message {
-	var messageUnmarshalled models.Message
+func (m marshaller) Unmarshall(message []byte) interface{} {
+	var messageUnmarshalled interface{}
 
 	err := json.Unmarshal(message, &messageUnmarshalled)
 
@@ -38,5 +37,5 @@ func (m marshaller) Unmarshall(message []byte) *models.Message {
 		return nil
 	}
 
-	return &messageUnmarshalled
+	return messageUnmarshalled
 }

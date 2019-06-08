@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
 	"log"
 	"net"
@@ -13,7 +14,7 @@ type producerHandler struct {
 	decoder *json.Decoder
 }
 
-var handler producerHandler
+var prodHandler producerHandler
 
 func NewProducerHandler() error {
 	ln, err := net.Listen("tcp", "localhost:5555")
@@ -29,38 +30,37 @@ func NewProducerHandler() error {
 	jsonEncoder := json.NewEncoder(conn)
 	jsonDecoder := json.NewDecoder(conn)
 
-	handler = producerHandler{
+	prodHandler = producerHandler{
 		conn:    conn,
 		encoder: jsonEncoder,
 		decoder: jsonDecoder,
 	}
 
-	listen()
+	listenl()
 
 	return nil
 }
 
-func listen() {
+func listenl() {
 	marshaller := marshaller.NewMarshaller()
 
 	for {
 		msg := receive()
 
 		msgUnmarshalled := marshaller.Unmarshall(msg)
-		switch msgUnmarshalled.Head {
+		message := msgUnmarshalled.(models.Message)
+		switch message.Head {
 		case "TopicDeclare":
-			// broker.TopicDeclare(msgUnmarshalled.TopicName, msgUnmarshalled.MaxPriority)
+			// broker.TopicDeclare(message.TopicName, message.MaxPriority)
 		case "Publish":
-			// broker.Publish(msgUnmarshalled.TopicName, msgUnmarshalled.MessagePriority, msgUnmarshalled.Body)
+			// broker.Publish(message.TopicName, message.MessagePriority, message.Body)
 		}
-
-		// adicionar um send para resposta do cliente
 	}
 }
 
 func receive() []byte {
 	var msg []byte
-	err := handler.decoder.Decode(&msg)
+	err := prodHandler.decoder.Decode(&msg)
 
 	if err != nil {
 		log.Fatal(err)
