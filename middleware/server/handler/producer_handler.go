@@ -3,7 +3,7 @@ package handler
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -33,11 +33,14 @@ func ServerProducerHandler() error {
 func handleProducerRequest(conn net.Conn) {
 	fmt.Println("Escutando producer")
 	marshaller := marshaller.NewMarshaller()
+	jsonDecoder := json.NewDecoder(conn)
+	var msg []byte
 
 	for {
 		// will listen for message to process ending in newline (\n)
 
-		msg, _ := bufio.NewReader(conn).ReadString('\n')
+		//msg, _ := bufio.NewReader(conn).ReadString('\n')
+		jsonDecoder.Decode(&msg)
 		// process for string received
 		if msg[0] == '{' {
 			msgUnmarshalled := marshaller.Unmarshall([]byte(msg))

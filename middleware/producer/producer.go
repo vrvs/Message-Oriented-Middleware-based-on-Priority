@@ -3,10 +3,9 @@ package producer
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
-	"time"
 )
 
 var marsh = marshaller.NewMarshaller()
@@ -22,7 +21,8 @@ type Publisher interface {
 }
 
 type publisher struct {
-	conn net.Conn
+	conn        net.Conn
+	jsonEncoder *json.Encoder
 }
 
 func NewPublisher(conn net.Conn) (Publisher, error) {
@@ -30,8 +30,10 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 		return nil, errors.New("error: empty conn")
 	}
 
+	jsonEncoder := json.NewEncoder(conn)
 	return &publisher{
-		conn: conn,
+		conn:        conn,
+		jsonEncoder: jsonEncoder,
 	}, nil
 }
 
@@ -58,10 +60,8 @@ func (p *publisher) Publish(topicName string, content Publishing) {
 
 func (p *publisher) send(msg models.Message) error {
 	msgMarshalled := marsh.Marshall(msg)
-	message := string(msgMarshalled)
-	time.Sleep(5000)
-	fmt.Fprintf(p.conn, message+"\n")
-
+	p.jsonEncoder.Encode(msgMarshalled)
+	//fmt.Fprintf(p.conn, message+"\n")
 	return nil
 }
 
