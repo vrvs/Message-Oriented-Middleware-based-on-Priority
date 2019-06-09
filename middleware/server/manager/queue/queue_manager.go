@@ -74,6 +74,10 @@ func (qm *QueueManager) Len(topic string) int {
 	return len
 }
 
+func (qm *QueueManager) InsertQueue(topicName string) {
+	//qm.queues[topicName]
+}
+
 func main() {
 	manager := &QueueManager{
 		queues: make(map[string]*safePriorityQueue),
