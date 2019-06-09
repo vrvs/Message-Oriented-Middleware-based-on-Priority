@@ -11,7 +11,6 @@ import (
 
 func ServerConsumerHandler(brokerConsumer *broker.Broker) error {
 	log.Println("Starting consumer server")
-	fmt.Println(brokerConsumer)
 	ln, err := net.Listen("tcp", "localhost:5556")
 	if err != nil {
 		return err
@@ -42,6 +41,7 @@ func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) {
 		// process for string received
 		if msg[0] == '{' {
 			message := adapter.MessageFromJson(msg)
+			fmt.Println(message.Conn)
 			switch message.Head {
 			case "Subscribe":
 				brokerConsumer.Subscribe(conn, message.TopicName)

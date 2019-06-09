@@ -14,7 +14,7 @@ var marsh = marshaller.NewMarshaller()
 
 type Subscriber interface {
 	Subscribe(topicName string)
-	Receive() (*[]byte, error)
+	Receive() ([]byte, error)
 }
 
 type subscriber struct {
@@ -42,18 +42,17 @@ func (s *subscriber) Subscribe(topicName string) {
 	msg := models.Message{
 		Head:      "Subscribe",
 		TopicName: topicName,
-		Conn:      s.conn,
+		Conn:      s.conn.RemoteAddr().String(),
 	}
-
+	fmt.Println(s.conn.LocalAddr().String())
+	fmt.Println(s.conn.RemoteAddr().String())
 	s.send(msg)
 }
 
-func (s *subscriber) Receive() (*[]byte, error) {
+func (s *subscriber) Receive() ([]byte, error) {
 	var response []byte
 
 	s.jsonDecoder.Decode(&response)
-
-	fmt.Println(string(response))
 
 	res := adapter.ResponseFromJson(response)
 
@@ -61,7 +60,7 @@ func (s *subscriber) Receive() (*[]byte, error) {
 		return nil, errors.New(res.Error)
 	}
 
-	return &res.Body, nil
+	return res.Body, nil
 }
 
 func (s *subscriber) send(msg models.Message) {

@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
 	"net"
@@ -9,9 +10,11 @@ import (
 type Subscriber struct {
 	conn        net.Conn
 	jsonEncoder *json.Encoder
+	marshaller  marshaller.Marshaller
 }
 
 func (s *Subscriber) Send(m *models.Response) error {
-	err := s.jsonEncoder.Encode(m.Body)
+	msg := s.marshaller.Marshall(m)
+	err := s.jsonEncoder.Encode(msg)
 	return err
 }

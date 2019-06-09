@@ -1,11 +1,11 @@
 package broker
 
 import (
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	queueManager "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue"
 	priority "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue/priority"
 	"encoding/json"
-	"fmt"
 	"net"
 	"time"
 )
@@ -31,6 +31,7 @@ func (b *Broker) Subscribe(subscriberConnection net.Conn, topicID string) error 
 	sub := &Subscriber{
 		conn:        subscriberConnection,
 		jsonEncoder: json.NewEncoder(subscriberConnection),
+		marshaller:  marshaller.NewMarshaller(),
 	}
 
 	err = topic.AddSubscriber(sub)
@@ -64,9 +65,6 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 		err := s.Send(&models.Response{
 			Body: m.(*priority.Item).Value,
 		})
-		v := m.(*priority.Item).Value
-		s := string(v)
-		fmt.Println(s)
 		if err != nil {
 			return err
 		}
@@ -75,7 +73,6 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 }
 
 func (b *Broker) Broadcast() {
-	fmt.Println(b.topics)
 	for {
 		time.Sleep(3000000000)
 		topics := b.topics.GetTopicsName()

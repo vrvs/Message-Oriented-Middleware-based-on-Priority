@@ -4,7 +4,6 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/server/broker"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 )
@@ -12,7 +11,6 @@ import (
 func ServerProducerHandler(brokerPoducer *broker.Broker) error {
 
 	log.Println("Starting producer server")
-	fmt.Println(brokerPoducer)
 	ln, err := net.Listen("tcp", "localhost:5555")
 	if err != nil {
 		return err

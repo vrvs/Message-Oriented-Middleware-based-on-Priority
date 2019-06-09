@@ -1,14 +1,12 @@
 package models
 
-import "net"
-
 type Message struct {
 	Head            string
 	TopicName       string
 	MaxPriority     int
 	MessagePriority int
 	Body            []byte
-	Conn            net.Conn
+	Conn            string
 }
 
 type Response struct {

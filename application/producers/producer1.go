@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/producer"
 	"net"
 )
@@ -12,7 +13,7 @@ func main() {
 	for {
 		v := producer.Publishing{
 			Priority: 9,
-			Body:     []byte("Here is a string...."),
+			Body:     models.Message{TopicName: "heyyyyy"},
 		}
 		p.Publish("test", v)
 	}
