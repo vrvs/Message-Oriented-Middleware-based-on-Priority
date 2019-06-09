@@ -12,7 +12,6 @@ func main() {
 	p.Subscribe("test")
 	for {
 		v, _ := p.Receive()
-		s := string(*v)
-		fmt.Println(s)
+		fmt.Println(v)
 	}
 }

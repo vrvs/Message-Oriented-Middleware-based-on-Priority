@@ -6,6 +6,7 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 )
 
@@ -51,6 +52,8 @@ func (s *subscriber) Receive() (*[]byte, error) {
 	var response []byte
 
 	s.jsonDecoder.Decode(&response)
+
+	fmt.Println(string(response))
 
 	res := adapter.ResponseFromJson(response)
 

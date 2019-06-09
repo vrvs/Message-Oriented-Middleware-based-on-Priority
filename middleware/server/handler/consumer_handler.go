@@ -44,7 +44,7 @@ func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) {
 			message := adapter.MessageFromJson(msg)
 			switch message.Head {
 			case "Subscribe":
-				brokerConsumer.Subscribe(message.Conn, message.TopicName)
+				brokerConsumer.Subscribe(conn, message.TopicName)
 			default:
 			}
 		} else {

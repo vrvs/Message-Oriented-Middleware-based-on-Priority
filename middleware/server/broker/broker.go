@@ -64,6 +64,9 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 		err := s.Send(&models.Response{
 			Body: m.(*priority.Item).Value,
 		})
+		v := m.(*priority.Item).Value
+		s := string(v)
+		fmt.Println(s)
 		if err != nil {
 			return err
 		}
@@ -72,11 +75,10 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 }
 
 func (b *Broker) Broadcast() {
-	fmt.Println(b)
+	fmt.Println(b.topics)
 	for {
 		time.Sleep(3000000000)
 		topics := b.topics.GetTopicsName()
-		fmt.Println(topics)
 		for i := 0; i < len(topics); i++ {
 			b.BroadcastTopic(topics[i])
 		}
