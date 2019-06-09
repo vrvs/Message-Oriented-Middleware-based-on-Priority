@@ -29,6 +29,9 @@ func (t *Topics) GetTopicsName() []string {
 	defer t.lock.RUnlock()
 	keys := reflect.ValueOf(t.topics).MapKeys()
 	strkeys := make([]string, len(keys))
+	for i := 0; i < len(keys); i++ {
+		strkeys[i] = keys[i].String()
+	}
 	return strkeys
 }
 
