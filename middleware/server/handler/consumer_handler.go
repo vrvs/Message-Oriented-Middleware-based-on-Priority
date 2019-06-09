@@ -28,7 +28,7 @@ func ServerConsumerHandler(brokerConsumer *broker.Broker) error {
 	return nil
 }
 
-func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) {
+func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) error {
 	jsonDecoder := json.NewDecoder(conn)
 
 	go brokerConsumer.Broadcast()
@@ -36,8 +36,10 @@ func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) {
 	for {
 		// will listen for message to process
 		var msg []byte
-		jsonDecoder.Decode(&msg)
-
+		err := jsonDecoder.Decode(&msg)
+		if err != nil {
+			return err
+		}
 		// process for string received
 		if msg[0] == '{' {
 			message := adapter.MessageFromJson(msg)

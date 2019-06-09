@@ -28,14 +28,16 @@ func ServerProducerHandler(brokerPoducer *broker.Broker) error {
 	return nil
 }
 
-func handleProducerRequest(conn net.Conn, brokerPoducer *broker.Broker) {
+func handleProducerRequest(conn net.Conn, brokerPoducer *broker.Broker) error {
 	jsonDecoder := json.NewDecoder(conn)
 
 	for {
 		// will listen for message to process
 		var msg []byte
-		jsonDecoder.Decode(&msg)
-
+		err := jsonDecoder.Decode(&msg)
+		if err != nil {
+			return err
+		}
 		// process for string received
 		if msg[0] == '{' {
 			message := adapter.MessageFromJson(msg)
