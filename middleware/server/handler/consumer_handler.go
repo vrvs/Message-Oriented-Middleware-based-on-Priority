@@ -1,18 +1,14 @@
 package handler
 
 import (
-	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
-	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"bufio"
-	"fmt"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
+	"encoding/json"
 	"log"
 	"net"
-
-	convert "github.com/mitchellh/mapstructure"
 )
 
 func ServerConsumerHandler() error {
-	fmt.Println("Ligando consumer server")
+	log.Println("Starting consumer server")
 	ln, err := net.Listen("tcp", "localhost:5556")
 	if err != nil {
 		return err
@@ -31,28 +27,24 @@ func ServerConsumerHandler() error {
 }
 
 func handleConsumerRequest(conn net.Conn) {
-	fmt.Println("Escutando consumer")
-	marshaller := marshaller.NewMarshaller()
+	jsonDecoder := json.NewDecoder(conn)
+	var msg []byte
 
 	for {
-		// will listen for message to process ending in newline (\n)
-		msg, _ := bufio.NewReader(conn).ReadString('\n')
+		// will listen for message to process
+		jsonDecoder.Decode(&msg)
 
 		// process for string received
-		msgUnmarshalled := marshaller.Unmarshall([]byte(msg))
-
-		message := models.Message{}
-		convert.Decode(msgUnmarshalled, &message)
-
-		switch message.Head {
-		case "TopicRegister":
-			fmt.Println(message.TopicName)
-			// broker.TopicRegister(message.TopicName, message.Conn)
-		default:
+		if msg[0] == '{' {
+			message := adapter.MessageFromJson(msg)
+			switch message.Head {
+			case "Subscribe":
+				// broker.TopicRegister(message.TopicName, message.Conn)
+			default:
+			}
+		} else {
+			log.Println("Error: message incomplete")
 		}
-
 		// send new string back to client
-
-		// conn.Write([]byte(newmessage + "\n"))
 	}
 }

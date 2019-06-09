@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	"encoding/json"
@@ -23,6 +24,7 @@ type Publisher interface {
 type publisher struct {
 	conn        net.Conn
 	jsonEncoder *json.Encoder
+	jsonDecoder *json.Decoder
 }
 
 func NewPublisher(conn net.Conn) (Publisher, error) {
@@ -31,9 +33,12 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 	}
 
 	jsonEncoder := json.NewEncoder(conn)
+	jsonDecoder := json.NewDecoder(conn)
+
 	return &publisher{
 		conn:        conn,
 		jsonEncoder: jsonEncoder,
+		jsonDecoder: jsonDecoder,
 	}, nil
 }
 
@@ -61,9 +66,20 @@ func (p *publisher) Publish(topicName string, content Publishing) {
 func (p *publisher) send(msg models.Message) error {
 	msgMarshalled := marsh.Marshall(msg)
 	p.jsonEncoder.Encode(msgMarshalled)
-	//fmt.Fprintf(p.conn, message+"\n")
+
 	return nil
 }
 
-// listen for reply
-//message, _ := bufio.NewReader(conn).ReadString('\n')
+func (p *publisher) receive() error {
+	var response []byte
+
+	p.jsonDecoder.Decode(&response)
+
+	res := adapter.ResponseFromJson(response)
+
+	if res.Error != "" {
+		return errors.New(res.Error)
+	}
+
+	return nil
+}

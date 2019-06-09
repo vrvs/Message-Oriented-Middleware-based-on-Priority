@@ -11,6 +11,7 @@ type Message struct {
 	Conn            net.Conn
 }
 
-type Subscribing struct {
-	Body []byte
+type Response struct {
+	Body  []byte
+	Error string
 }

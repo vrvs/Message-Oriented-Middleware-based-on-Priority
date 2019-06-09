@@ -1,23 +1,25 @@
 package consumer
 
 import (
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"bufio"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 )
 
 var marsh = marshaller.NewMarshaller()
 
 type Subscriber interface {
-	Subscribe(topicName string, conn net.Conn) error
-	Receive() []byte
+	Subscribe(topicName string)
+	Receive() (*[]byte, error)
 }
 
 type subscriber struct {
-	conn net.Conn
+	conn        net.Conn
+	jsonEncoder *json.Encoder
+	jsonDecoder *json.Decoder
 }
 
 func NewSubscriber(conn net.Conn) (Subscriber, error) {
@@ -25,38 +27,41 @@ func NewSubscriber(conn net.Conn) (Subscriber, error) {
 		return nil, errors.New("error: empty conn")
 	}
 
+	jsonEncoder := json.NewEncoder(conn)
+	jsonDecoder := json.NewDecoder(conn)
+
 	return &subscriber{
-		conn: conn,
+		conn:        conn,
+		jsonEncoder: jsonEncoder,
+		jsonDecoder: jsonDecoder,
 	}, nil
 }
 
-func (s *subscriber) Subscribe(topicName string, conn net.Conn) error {
-	if conn == nil {
-		return errors.New("error: empty conn")
-	}
-
+func (s *subscriber) Subscribe(topicName string) {
 	msg := models.Message{
 		Head:      "Subscribe",
 		TopicName: topicName,
-		Conn:      conn,
+		Conn:      s.conn,
 	}
 
 	s.send(msg)
-
-	return nil
 }
 
-func (s *subscriber) Receive() []byte {
-	message, _ := bufio.NewReader(s.conn).ReadString('\n')
+func (s *subscriber) Receive() (*[]byte, error) {
+	var response []byte
 
-	msgUnmarshalled := marsh.Unmarshall([]byte(message))
+	s.jsonDecoder.Decode(&response)
 
-	ans := msgUnmarshalled.(models.Subscribing)
+	res := adapter.ResponseFromJson(response)
 
-	return ans.Body
+	if res.Error != "" {
+		return nil, errors.New(res.Error)
+	}
+
+	return &res.Body, nil
 }
 
 func (s *subscriber) send(msg models.Message) {
 	msgMarshalled := marsh.Marshall(msg)
-	fmt.Fprintf(s.conn, string(msgMarshalled)+"\n")
+	s.jsonEncoder.Encode(msgMarshalled)
 }
