@@ -30,10 +30,10 @@ func ServerProducerHandler(brokerPoducer *broker.Broker) error {
 
 func handleProducerRequest(conn net.Conn, brokerPoducer *broker.Broker) {
 	jsonDecoder := json.NewDecoder(conn)
-	var msg []byte
 
 	for {
 		// will listen for message to process
+		var msg []byte
 		jsonDecoder.Decode(&msg)
 
 		// process for string received

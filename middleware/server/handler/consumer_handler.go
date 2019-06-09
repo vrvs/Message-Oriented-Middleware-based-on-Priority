@@ -30,12 +30,12 @@ func ServerConsumerHandler(brokerConsumer *broker.Broker) error {
 
 func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) {
 	jsonDecoder := json.NewDecoder(conn)
-	var msg []byte
 
 	go brokerConsumer.Broadcast()
 
 	for {
 		// will listen for message to process
+		var msg []byte
 		jsonDecoder.Decode(&msg)
 
 		// process for string received

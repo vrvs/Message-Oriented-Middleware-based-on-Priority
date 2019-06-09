@@ -61,6 +61,9 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 	}
 
 	m, err := b.queueManager.Pop(topicName)
+	if err != nil {
+		return err
+	}
 	for _, s := range topic.Subscribers {
 		err := s.Send(&models.Response{
 			Body: m.(*priority.Item).Value,
