@@ -1,15 +1,15 @@
 package main
 
 import (
-	"net"
+	"Message-Oriented-Middleware-based-on-Priority/application/models"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/producer"
 	"bufio"
-  	"fmt"
-  	"os"
-	"strings"
+	"fmt"
 	"math/rand"
+	"net"
+	"os"
+	"strings"
 	"time"
-	"Producer-Side-Application/jars/com/momp/producer"
-	"Producer-Side-Application/app/models"
 )
 
 var maxPriority int
@@ -35,21 +35,21 @@ func ProduceData() producer.Publishing {
 	default:
 	}
 
-	body := models.Event {
+	body := models.Event{
 		ActionType: actionType,
-		Count: countRand, 
+		Count:      countRand,
 	}
 
-	return producer.Publishing {
+	return producer.Publishing{
 		Priority: priority,
-		Body: body,
+		Body:     body,
 	}
 }
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("My MOMP Application Producer")
-  	fmt.Println("---------------------")
+	fmt.Println("---------------------")
 	fmt.Println("Write topic name to produce:")
 	topic, _ := reader.ReadString('\n')
 	topic = strings.Replace(topic, "\n", "", -1)
@@ -57,7 +57,7 @@ func main() {
 	conn, _ := net.Dial("tcp", "127.0.0.1:5555")
 
 	publisher, err := producer.NewPublisher(conn)
-	if(err != nil){
+	if err != nil {
 		fmt.Println(err)
 	}
 
@@ -70,6 +70,6 @@ func main() {
 
 		fmt.Println("Published data on topic: ", topic, " with priority: ", data.Priority)
 
-		time.Sleep(time.Duration(rand.Intn(200) + 200) * time.Millisecond)
-	}	
+		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+	}
 }

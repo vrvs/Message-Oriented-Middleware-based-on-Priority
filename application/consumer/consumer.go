@@ -1,15 +1,15 @@
 package main
 
 import (
-	"net"
+	"Message-Oriented-Middleware-based-on-Priority/application/models"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/consumer"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"bufio"
-  	"fmt"
-  	"os"
-	"strings"
-	"Producer-Side-Application/jars/com/momp/consumer"
-	"Producer-Side-Application/jars/com/momp/lib/marshaller"
-	"Producer-Side-Application/app/models"
 	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"strings"
 )
 
 var aggData map[string]int
@@ -25,9 +25,9 @@ func EventFromJson(value []byte) models.Event {
 
 func ProcessData(data []byte) {
 	eventData := EventFromJson(data)
-	
+
 	value, isPresent := aggData[eventData.ActionType]
-	if (!isPresent) {
+	if !isPresent {
 		value = 0
 	}
 
@@ -45,7 +45,7 @@ func main() {
 	aggData = make(map[string]int)
 
 	fmt.Println("My MOMP Application Producer")
-  	fmt.Println("---------------------------------")
+	fmt.Println("---------------------------------")
 	fmt.Println("Write topic name to produce:")
 	topic, _ := reader.ReadString('\n')
 	topic = strings.Replace(topic, "\n", "", -1)

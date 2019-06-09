@@ -69,7 +69,7 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 			Body: m.(*priority.Item).Value,
 		})
 		if err != nil {
-			return err
+			//return err
 		}
 	}
 	return nil
