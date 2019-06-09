@@ -12,12 +12,12 @@ import (
 var marsh = marshaller.NewMarshaller()
 
 type Publishing struct {
-	Priority int64
+	Priority int
 	Body     interface{}
 }
 
 type Publisher interface {
-	TopicDeclare(topicName string, maxPriority int64)
+	TopicDeclare(topicName string, maxPriority int)
 	Publish(queueName string, content Publishing)
 }
 
@@ -42,7 +42,7 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 	}, nil
 }
 
-func (p *publisher) TopicDeclare(topicName string, maxPriority int64) {
+func (p *publisher) TopicDeclare(topicName string, maxPriority int) {
 	msg := models.Message{
 		Head:        "TopicDeclare",
 		TopicName:   topicName,

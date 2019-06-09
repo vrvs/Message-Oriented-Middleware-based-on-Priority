@@ -54,6 +54,10 @@ func (qm *QueueManager) Push(topic string, item interface{}) error {
 	return nil
 }
 
+func (qm *QueueManager) InsertQueue(topicName string, queue *SafePriorityQueue) {
+	qm.queues[topicName] = queue
+}
+
 func main() {
 	manager := &QueueManager{
 		queues: make(map[string]*SafePriorityQueue),

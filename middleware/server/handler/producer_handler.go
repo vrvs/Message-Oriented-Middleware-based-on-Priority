@@ -2,12 +2,16 @@ package handler
 
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
+	b "Message-Oriented-Middleware-based-on-Priority/middleware/server/broker"
 	"encoding/json"
 	"log"
 	"net"
 )
 
+var brokerPoducer = b.NewBroker()
+
 func ServerProducerHandler() error {
+
 	log.Println("Starting producer server")
 	ln, err := net.Listen("tcp", "localhost:5555")
 	if err != nil {
@@ -39,9 +43,9 @@ func handleProducerRequest(conn net.Conn) {
 			message := adapter.MessageFromJson(msg)
 			switch message.Head {
 			case "TopicDeclare":
-				// broker.TopicDeclare(message.TopicName, message.MaxPriority)
+				brokerPoducer.CreateTopic(message.TopicName, message.MaxPriority)
 			case "Publish":
-				// broker.Publish(message.TopicName, message.MessagePriority, message.Body)
+				brokerPoducer.Publish(message.TopicName, message.MessagePriority, message.Body)
 			}
 		} else {
 			log.Println("Error: message incomplete")

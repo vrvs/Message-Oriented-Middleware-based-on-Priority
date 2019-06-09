@@ -5,8 +5,8 @@ import "net"
 type Message struct {
 	Head            string
 	TopicName       string
-	MaxPriority     int64
-	MessagePriority int64
+	MaxPriority     int
+	MessagePriority int
 	Body            []byte
 	Conn            net.Conn
 }

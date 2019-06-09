@@ -2,10 +2,13 @@ package handler
 
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
+	"Message-Oriented-Middleware-based-on-Priority/middleware/server/broker"
 	"encoding/json"
 	"log"
 	"net"
 )
+
+var brokerConsumer = broker.NewBroker()
 
 func ServerConsumerHandler() error {
 	log.Println("Starting consumer server")
@@ -39,7 +42,7 @@ func handleConsumerRequest(conn net.Conn) {
 			message := adapter.MessageFromJson(msg)
 			switch message.Head {
 			case "Subscribe":
-				// broker.TopicRegister(message.TopicName, message.Conn)
+				brokerConsumer.Subscribe(message.Conn, message.TopicName)
 			default:
 			}
 		} else {
