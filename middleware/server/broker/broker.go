@@ -4,64 +4,52 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	queueManager "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue"
 	priority "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue/priority"
-
+	"encoding/json"
+	"fmt"
 	"net"
-	"sync"
+	"time"
 )
 
 type Broker struct {
 	topics       *Topics
-	slock        sync.RWMutex
-	tlock        sync.RWMutex
 	queueManager *queueManager.QueueManager
 }
 
 func NewBroker() *Broker {
 	return &Broker{
-		topics:       &Topics{},
-		slock:        sync.RWMutex{},
-		tlock:        sync.RWMutex{},
-		queueManager: &queueManager.QueueManager{},
+		topics:       NewTopics(),
+		queueManager: queueManager.NewQueueManager(),
 	}
 }
 
 func (b *Broker) Subscribe(subscriberConnection net.Conn, topicID string) error {
-	b.tlock.Lock()
-	defer b.tlock.Unlock()
-
 	topic, err := b.topics.GetTopic(topicID)
 	if err != nil {
 		return err
 	}
 
 	sub := &Subscriber{
-		conn:      subscriberConnection,
-		publisher: false,
-		lock:      &sync.RWMutex{},
+		conn:        subscriberConnection,
+		jsonEncoder: json.NewEncoder(subscriberConnection),
 	}
 
-	topic.Subscribers = append(topic.Subscribers, *sub)
-
-	return nil
+	err = topic.AddSubscriber(sub)
+	return err
 }
 
 func (b *Broker) Publish(topicName string, messagePrioriy int, data []byte) error {
-	err := b.queueManager.Push(topicName, priority.Item{
+	err := b.queueManager.Push(topicName, &priority.Item{
 		Value:    data,
 		Priority: messagePrioriy,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 /*
 func (b *Broker) Unsubscribe(subscriberID, topicID string) error {
 }
 */
-func (b *Broker) Broadcast(topicName string) error {
+func (b *Broker) BroadcastTopic(topicName string) error {
 	topic, err := b.topics.GetTopic(topicName)
 	if err != nil {
 		return err
@@ -79,36 +67,36 @@ func (b *Broker) Broadcast(topicName string) error {
 		if err != nil {
 			return err
 		}
-
 	}
-
 	return nil
 }
 
-func (b *Broker) CreateTopic(topicName string, maxPriority int) (net.Conn, error) {
-	ln, err := net.Listen("tcp", "localhost:5555")
-	if err != nil {
-		return nil, err
+func (b *Broker) Broadcast() {
+	fmt.Println(b)
+	for {
+		time.Sleep(3000000000)
+		topics := b.topics.GetTopicsName()
+		fmt.Println(topics)
+		for i := 0; i < len(topics); i++ {
+			b.BroadcastTopic(topics[i])
+		}
 	}
+}
 
-	conn, err := ln.Accept()
-	if err != nil {
-		return nil, err
-	}
+func (b *Broker) CreateTopic(topicName string, maxPriority int) error {
 
 	topic := &Topic{
 		Name:        topicName,
 		Subscribers: []Subscriber{},
 		MaxPriority: maxPriority,
-		Conn:        conn,
 	}
 
-	err = b.topics.AddTopic(topic)
+	err := b.topics.AddTopic(topic)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	b.queueManager.InsertQueue(topicName, topic.Queue)
+	b.queueManager.CreateQueue(topicName)
 
-	return topic.Conn, nil
+	return nil
 }

@@ -4,14 +4,14 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/server/broker"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 )
 
-var brokerConsumer = broker.NewBroker()
-
-func ServerConsumerHandler() error {
+func ServerConsumerHandler(brokerConsumer *broker.Broker) error {
 	log.Println("Starting consumer server")
+	fmt.Println(brokerConsumer)
 	ln, err := net.Listen("tcp", "localhost:5556")
 	if err != nil {
 		return err
@@ -23,15 +23,17 @@ func ServerConsumerHandler() error {
 			log.Println("Error accepting request:", err)
 		}
 
-		go handleConsumerRequest(conn)
+		go handleConsumerRequest(conn, brokerConsumer)
 	}
 
 	return nil
 }
 
-func handleConsumerRequest(conn net.Conn) {
+func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) {
 	jsonDecoder := json.NewDecoder(conn)
 	var msg []byte
+
+	go brokerConsumer.Broadcast()
 
 	for {
 		// will listen for message to process

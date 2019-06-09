@@ -2,21 +2,16 @@ package broker
 
 import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
+	"encoding/json"
 	"net"
-	"sync"
 )
 
 type Subscriber struct {
-	conn      net.Conn
-	publisher bool
-	lock      *sync.RWMutex
+	conn        net.Conn
+	jsonEncoder *json.Encoder
 }
 
 func (s *Subscriber) Send(m *models.Response) error {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	_, err := s.conn.Write(m.Body)
-
+	err := s.jsonEncoder.Encode(m.Body)
 	return err
 }
