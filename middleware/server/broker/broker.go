@@ -123,7 +123,7 @@ func (b *Broker) CreateTopic(topicName string, maxPriority int, retry bool) erro
 	}
 
 	if retry {
-		b.retryManager.AddDuration(topicName, 30)
+		b.retryManager.AddDuration(topicName, 1)
 		b.retryManager.CreateQueue(topicName)
 	} else {
 		b.queueManager.CreateQueue(topicName)

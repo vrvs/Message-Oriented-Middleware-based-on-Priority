@@ -1,9 +1,9 @@
 package main
 
 import (
-	"Message-Oriented-Middleware-based-on-Priority/application/models"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/consumer"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
+	"Message-Oriented-Middleware-based-on-Priority/momp-app/models"
 	"bufio"
 	"encoding/json"
 	"fmt"
