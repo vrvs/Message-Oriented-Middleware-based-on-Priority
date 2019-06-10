@@ -13,9 +13,11 @@ import (
 	"time"
 )
 
-func ProduceData() models.Event {
+func ProduceData() (models.Event, uint8) {
 	dataRand := rand.Intn(5)
 	countRand := rand.Intn(9) + 1
+
+	var priority uint8 = uint8(9 - dataRand)
 
 	var actionType string
 
@@ -36,10 +38,10 @@ func ProduceData() models.Event {
 	return models.Event {
 		ActionType: actionType,
 		Count: countRand, 
-	}
+	}, priority
 }
 
-func send(responseQueue amqp.Queue, msg models.Event, ch *amqp.Channel) {
+func send(responseQueue amqp.Queue, msg models.Event, ch *amqp.Channel, priority uint8) {
 
 	response, err := json.Marshal(msg)
 	if err != nil {
@@ -50,6 +52,7 @@ func send(responseQueue amqp.Queue, msg models.Event, ch *amqp.Channel) {
 		amqp.Publishing{
 			ContentType: "json",
 			Body:        []byte(response),
+			Priority: 	 priority,
 		},
 	)
 	if err != nil {
@@ -80,10 +83,10 @@ func main() {
 	topicQueue, err := ch.QueueDeclare(topic, false, false, false, false, nil)
 
 	for {
-		data := ProduceData()
-		send(topicQueue, data, ch)
+		data, priority := ProduceData()
+		send(topicQueue, data, ch, priority)
 
-		fmt.Println("Published data on topic: ", topic)
+		fmt.Println("Published data on topic: ", topic, " with priority: ", priority)
 
 		time.Sleep(time.Duration(rand.Intn(200) + 200) * time.Millisecond)
 	}
