@@ -6,7 +6,7 @@ type Message struct {
 	MaxPriority     int
 	MessagePriority int
 	Body            []byte
-	Conn            string
+	Identifier      string
 }
 
 type Response struct {

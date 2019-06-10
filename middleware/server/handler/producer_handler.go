@@ -43,7 +43,7 @@ func handleProducerRequest(conn net.Conn, brokerPoducer *broker.Broker) error {
 			message := adapter.MessageFromJson(msg)
 			switch message.Head {
 			case "TopicDeclare":
-				brokerPoducer.CreateTopic(message.TopicName, message.MaxPriority)
+				brokerPoducer.CreateTopic(message.TopicName, message.MaxPriority, false)
 			case "Publish":
 				brokerPoducer.Publish(message.TopicName, message.MessagePriority, message.Body)
 			}

@@ -52,7 +52,7 @@ func main() {
 
 	conn, _ := net.Dial("tcp", "localhost:5556")
 	subscriber, _ := consumer.NewSubscriber(conn)
-	subscriber.Subscribe(topic)
+	subscriber.Subscribe(topic, "hey")
 
 	for {
 		data, _ := subscriber.Receive()

@@ -6,10 +6,12 @@ import (
 )
 
 type Topic struct {
-	Subscribers []Subscriber
+	Subscribers []*Subscriber
 	MaxPriority int
 	Name        string
-	lock        sync.RWMutex
+	Lock        sync.RWMutex
+	Retry       bool
+	Chan        chan (interface{})
 }
 
 type Topics struct {
@@ -35,6 +37,13 @@ func (t *Topics) GetTopicsName() []string {
 	return strkeys
 }
 
+func (t *Topics) TopicExists(topicName string) bool {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	_, exist := t.topics[topicName]
+	return exist
+}
+
 func (t *Topics) GetTopic(topicName string) (*Topic, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
@@ -58,8 +67,15 @@ func (t *Topics) AddTopic(topic *Topic) error {
 }
 
 func (t *Topic) AddSubscriber(sub *Subscriber) error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	t.Subscribers = append(t.Subscribers, *sub)
+	t.Lock.Lock()
+	defer t.Lock.Unlock()
+	for _, s := range t.Subscribers {
+		if s.identifier == sub.identifier {
+			s.conn = sub.conn
+			s.jsonEncoder = sub.jsonEncoder
+			return nil
+		}
+	}
+	t.Subscribers = append(t.Subscribers, sub)
 	return nil
 }

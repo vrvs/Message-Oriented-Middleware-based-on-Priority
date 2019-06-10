@@ -13,7 +13,7 @@ import (
 var marsh = marshaller.NewMarshaller()
 
 type Subscriber interface {
-	Subscribe(topicName string)
+	Subscribe(topicName string, identifier string)
 	Receive() ([]byte, error)
 }
 
@@ -38,11 +38,11 @@ func NewSubscriber(conn net.Conn) (Subscriber, error) {
 	}, nil
 }
 
-func (s *subscriber) Subscribe(topicName string) {
+func (s *subscriber) Subscribe(topicName string, identifier string) {
 	msg := models.Message{
-		Head:      "Subscribe",
-		TopicName: topicName,
-		Conn:      s.conn.RemoteAddr().String(),
+		Head:       "Subscribe",
+		TopicName:  topicName,
+		Identifier: identifier,
 	}
 	fmt.Println(s.conn.LocalAddr().String())
 	fmt.Println(s.conn.RemoteAddr().String())

@@ -4,7 +4,6 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/server/broker"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 )
@@ -43,10 +42,9 @@ func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) error {
 		// process for string received
 		if msg[0] == '{' {
 			message := adapter.MessageFromJson(msg)
-			fmt.Println(message.Conn)
 			switch message.Head {
 			case "Subscribe":
-				brokerConsumer.Subscribe(conn, message.TopicName)
+				brokerConsumer.Subscribe(conn, message.TopicName, message.Identifier)
 			default:
 			}
 		} else {

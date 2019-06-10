@@ -11,6 +11,7 @@ type Subscriber struct {
 	conn        net.Conn
 	jsonEncoder *json.Encoder
 	marshaller  marshaller.Marshaller
+	identifier  string
 }
 
 func (s *Subscriber) Send(m *models.Response) error {

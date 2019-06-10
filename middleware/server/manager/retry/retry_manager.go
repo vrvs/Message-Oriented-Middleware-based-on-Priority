@@ -1,8 +1,7 @@
-package main
+package retry
 
 import (
 	queue "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue"
-	priority "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue/priority"
 	"fmt"
 	"strconv"
 	"sync"
@@ -22,33 +21,43 @@ type RetryManager struct {
 	alarms       sync.Map // [string]*time.Timer
 	locks        map[string]*sync.Mutex
 	Time         sync.Map //map[string]time.Duration
-	pt           Printer
 }
 
-func f(qm *queue.QueueManager, rm *RetryManager, topic string) {
+func NewRetryManager() *RetryManager {
+	return &RetryManager{
+		queueManager: queue.NewQueueManager(),
+		alarms:       sync.Map{},
+		locks:        make(map[string]*sync.Mutex),
+		Time:         sync.Map{},
+	}
+}
+func f(qm *queue.QueueManager, rm *RetryManager, topic string, c chan<- interface{}) {
 	value, _ := qm.Pop(topic)
-	if qm.Len(topic) == 0 {
+	len, _ := qm.Len(topic)
+	if len == 0 {
 		rm.alarms.Delete(topic)
 	} else {
 		v, _ := rm.Time.Load(topic)
 		t := v.(time.Duration)
 		rm.alarms.Store(topic, time.AfterFunc(t, func() {
-			f(qm, rm, topic)
+			f(qm, rm, topic, c)
 		}))
 	}
-	rm.pt.print(value.(*priority.Item).Value)
+	c <- value
 }
 
-func (rm *RetryManager) Push(topic string, item interface{}) error {
+func (rm *RetryManager) Push(topic string, item interface{}, c chan<- interface{}) error {
 	qm := rm.queueManager
 	l, _ := rm.locks[topic]
 	l.Lock()
-	if qm.Len(topic) == 0 {
+	len, _ := qm.Len(topic)
+	if len == 0 {
 		qm.Push(topic, item)
 		v, _ := rm.Time.Load(topic)
 		t := v.(time.Duration)
+		fmt.Println(t)
 		rm.alarms.Store(topic, time.AfterFunc(t, func() {
-			f(qm, rm, topic)
+			f(qm, rm, topic, c)
 		}))
 	} else {
 		qm.Push(topic, item)
@@ -64,57 +73,10 @@ func (rm *RetryManager) AddDuration(topic string, seconds int) {
 	rm.locks[topic] = &sync.Mutex{}
 }
 
-func (rm *RetryManager) Run(topic string) {
-	for {
-		if topic == "v" {
-			c <- 1
-		}
-		topic = "f"
-	}
-}
-
-func main() {
-	rm := &RetryManager{
-		queueManager: queue.NewQueueManager(),
-		alarms:       sync.Map{},
-		locks:        make(map[string]*sync.Mutex),
-		Time:         sync.Map{},
-		pt:           Printer{},
-	}
-	topic := "test"
-	topic2 := "test2"
-	hello := &priority.Item{
-		Value:    "hello",
-		Priority: 10,
-	}
-	world := &priority.Item{
-		Value:    "world",
-		Priority: 7,
-	}
-	test := &priority.Item{
-		Value:    "test",
-		Priority: 5,
-	}
-	hello2 := &priority.Item{
-		Value:    "hello2",
-		Priority: 10,
-	}
-	world2 := &priority.Item{
-		Value:    "world2",
-		Priority: 7,
-	}
-	test2 := &priority.Item{
-		Value:    "test2",
-		Priority: 5,
-	}
-	rm.AddDuration(topic, 9)
-	rm.AddDuration(topic2, 4)
-	go rm.Push(topic2, test2)
-	go rm.Push(topic2, hello2)
-	go rm.Push(topic2, world2)
-	go rm.Push(topic, test)
-	go rm.Push(topic, hello)
-	go rm.Push(topic, world)
-	go rm.Run(topic)
-	<-c
+func (rm *RetryManager) CreateQueue(topic string) error {
+	qm := rm.queueManager
+	l, _ := rm.locks[topic]
+	l.Lock()
+	l.Unlock()
+	return qm.CreateQueue(topic)
 }
