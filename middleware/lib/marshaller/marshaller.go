@@ -7,7 +7,7 @@ import (
 
 type Marshaller interface {
 	Marshall(message interface{}) []byte
-	Unmarshall(message []byte) interface{}
+	Unmarshall(message []byte, response interface{}) error
 }
 
 type marshaller struct{}
@@ -27,15 +27,13 @@ func (m marshaller) Marshall(message interface{}) []byte {
 	return msgMarshalled
 }
 
-func (m marshaller) Unmarshall(message []byte) interface{} {
-	var messageUnmarshalled interface{}
+func (m marshaller) Unmarshall(message []byte, response interface{}) error {
 
-	err := json.Unmarshal(message, &messageUnmarshalled)
+	err := json.Unmarshal(message, &response)
 
 	if err != nil {
-		log.Fatal(err)
 		return nil
 	}
 
-	return messageUnmarshalled
+	return nil
 }

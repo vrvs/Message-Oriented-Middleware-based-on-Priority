@@ -5,7 +5,6 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/momp-app/models"
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -13,19 +12,10 @@ import (
 )
 
 var aggData map[string]int
+var eventData models.Event
 var marsh marshaller.Marshaller = marshaller.NewMarshaller()
 
-func EventFromJson(value []byte) models.Event {
-	var data models.Event
-
-	json.Unmarshal(value, &data)
-
-	return data
-}
-
-func ProcessData(data []byte) {
-	eventData := EventFromJson(data)
-
+func ProcessData() {
 	value, isPresent := aggData[eventData.ActionType]
 	if !isPresent {
 		value = 0
@@ -58,10 +48,10 @@ func main() {
 	subscriber.Subscribe(topic, identifier)
 
 	for {
-		data, _ := subscriber.Receive()
+		subscriber.Receive(&eventData)
 		fmt.Println("---------------------------------")
 		fmt.Println("Data consumed from topic: ", topic)
-		ProcessData(data)
+		ProcessData()
 		fmt.Println("Aggregated data:")
 		PrettyPrint()
 	}

@@ -12,7 +12,7 @@ var marsh = marshaller.NewMarshaller()
 
 type Subscriber interface {
 	Subscribe(topicName string, identifier string)
-	Receive() ([]byte, error)
+	Receive(response interface{}) error
 }
 
 type subscriber struct {
@@ -42,19 +42,25 @@ func (s *subscriber) Subscribe(topicName string, identifier string) {
 	s.handler.send(msgMarshalled)
 }
 
-func (s *subscriber) Receive() ([]byte, error) {
+func (s *subscriber) Receive(object interface{}) error {
 
 	response, err := s.handler.receive()
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	res := adapter.ResponseFromJson(response)
 
 	if res.Error != "" {
-		return nil, errors.New(res.Error)
+		return errors.New(res.Error)
 	}
 
-	return res.Body, nil
+	err = marsh.Unmarshall(res.Body, object)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
