@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-func ServerProducerHandler(brokerPoducer *broker.Broker) error {
+func ServerProducerHandler(brokerPoducer broker.Broker) error {
 
 	log.Println("Starting producer server")
 	ln, err := net.Listen("tcp", "localhost:5555")
@@ -28,7 +28,7 @@ func ServerProducerHandler(brokerPoducer *broker.Broker) error {
 	return nil
 }
 
-func handleProducerRequest(conn net.Conn, brokerPoducer *broker.Broker) error {
+func handleProducerRequest(conn net.Conn, brokerPoducer broker.Broker) error {
 	jsonDecoder := json.NewDecoder(conn)
 
 	for {

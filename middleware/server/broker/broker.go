@@ -11,19 +11,28 @@ import (
 	"time"
 )
 
-type Broker struct {
-	topics       *Topics
-	queueManager *queueManager.QueueManager
+type Broker interface {
+	Subscribe(subscriberConnection net.Conn, topicName string, identifier string) error
+	Publish(topicName string, messagePrioriy int, data []byte) error
+	BroadcastTopic(topic *Topic) error
+	BroadcastConn()
+	BroadcastNotConn()
+	CreateTopic(topicName string, maxPriority int, retry bool) error
 }
 
-func NewBroker() *Broker {
-	return &Broker{
+type broker struct {
+	topics       *Topics
+	queueManager queueManager.QueueManager
+}
+
+func NewBroker() Broker {
+	return &broker{
 		topics:       NewTopics(),
 		queueManager: queueManager.NewQueueManager(),
 	}
 }
 
-func (b *Broker) Subscribe(subscriberConnection net.Conn, topicName string, identifier string) error {
+func (b *broker) Subscribe(subscriberConnection net.Conn, topicName string, identifier string) error {
 	topic, err := b.topics.GetTopic(topicName)
 	if err != nil {
 		b.CreateTopic(topicName, 10, false)
@@ -41,7 +50,7 @@ func (b *Broker) Subscribe(subscriberConnection net.Conn, topicName string, iden
 	return err
 }
 
-func (b *Broker) Publish(topicName string, messagePrioriy int, data []byte) error {
+func (b *broker) Publish(topicName string, messagePrioriy int, data []byte) error {
 	err := b.queueManager.Push(topicName, &priority.Item{
 		Value:    data,
 		Priority: messagePrioriy,
@@ -53,7 +62,7 @@ func (b *Broker) Publish(topicName string, messagePrioriy int, data []byte) erro
 func (b *Broker) Unsubscribe(subscriberID, topicID string) error {
 }
 */
-func (b *Broker) BroadcastTopic(topic *Topic) error {
+func (b *broker) BroadcastTopic(topic *Topic) error {
 	topic, err := b.topics.GetTopic(topic.Name)
 	if err != nil {
 		return err
@@ -91,7 +100,7 @@ func (b *Broker) BroadcastTopic(topic *Topic) error {
 	return nil
 }
 
-func (b *Broker) BroadcastConn() {
+func (b *broker) BroadcastConn() {
 	for {
 		topics := b.topics.GetTopics()
 		for i := 0; i < len(topics); i++ {
@@ -102,7 +111,7 @@ func (b *Broker) BroadcastConn() {
 	}
 }
 
-func (b *Broker) BroadcastNotConn() {
+func (b *broker) BroadcastNotConn() {
 	for {
 		time.Sleep(35000000000)
 		topics := b.topics.GetTopics()
@@ -114,7 +123,7 @@ func (b *Broker) BroadcastNotConn() {
 	}
 }
 
-func (b *Broker) CreateTopic(topicName string, maxPriority int, retry bool) error {
+func (b *broker) CreateTopic(topicName string, maxPriority int, retry bool) error {
 
 	topic := &Topic{
 		Name:        topicName,

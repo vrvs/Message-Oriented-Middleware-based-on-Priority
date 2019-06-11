@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-func ServerConsumerHandler(brokerConsumer *broker.Broker) error {
+func ServerConsumerHandler(brokerConsumer broker.Broker) error {
 	log.Println("Starting consumer server")
 	ln, err := net.Listen("tcp", "localhost:5556")
 	if err != nil {
@@ -28,7 +28,7 @@ func ServerConsumerHandler(brokerConsumer *broker.Broker) error {
 	return nil
 }
 
-func handleConsumerRequest(conn net.Conn, brokerConsumer *broker.Broker) error {
+func handleConsumerRequest(conn net.Conn, brokerConsumer broker.Broker) error {
 	jsonDecoder := json.NewDecoder(conn)
 
 	for {
