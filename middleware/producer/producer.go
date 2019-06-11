@@ -4,7 +4,6 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"encoding/json"
 	"errors"
 	"net"
 )
@@ -22,9 +21,7 @@ type Publisher interface {
 }
 
 type publisher struct {
-	conn        net.Conn
-	jsonEncoder *json.Encoder
-	jsonDecoder *json.Decoder
+	handler *producerHanlder
 }
 
 func NewPublisher(conn net.Conn) (Publisher, error) {
@@ -32,13 +29,10 @@ func NewPublisher(conn net.Conn) (Publisher, error) {
 		return nil, errors.New("error: empty conn")
 	}
 
-	jsonEncoder := json.NewEncoder(conn)
-	jsonDecoder := json.NewDecoder(conn)
+	handler := newProducerHanlder(conn)
 
 	return &publisher{
-		conn:        conn,
-		jsonEncoder: jsonEncoder,
-		jsonDecoder: jsonDecoder,
+		handler: handler,
 	}, nil
 }
 
@@ -49,7 +43,9 @@ func (p *publisher) TopicDeclare(topicName string, maxPriority int) {
 		MaxPriority: maxPriority,
 	}
 
-	p.send(msg)
+	msgMarshalled := marsh.Marshall(msg)
+
+	p.handler.send(msgMarshalled)
 }
 
 func (p *publisher) Publish(topicName string, content Publishing) {
@@ -60,20 +56,19 @@ func (p *publisher) Publish(topicName string, content Publishing) {
 		Body:            marsh.Marshall(content.Body),
 	}
 
-	p.send(msg)
-}
-
-func (p *publisher) send(msg models.Message) error {
 	msgMarshalled := marsh.Marshall(msg)
-	p.jsonEncoder.Encode(msgMarshalled)
 
-	return nil
+	p.handler.send(msgMarshalled)
 }
 
 func (p *publisher) receive() error {
 	var response []byte
 
-	p.jsonDecoder.Decode(&response)
+	response, err := p.handler.receive()
+
+	if err != nil {
+		return err
+	}
 
 	res := adapter.ResponseFromJson(response)
 

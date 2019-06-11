@@ -4,9 +4,7 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/adapter"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/marshaller"
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 )
 
@@ -18,23 +16,17 @@ type Subscriber interface {
 }
 
 type subscriber struct {
-	conn        net.Conn
-	jsonEncoder *json.Encoder
-	jsonDecoder *json.Decoder
+	handler *consumerHanlder
 }
 
 func NewSubscriber(conn net.Conn) (Subscriber, error) {
 	if conn == nil {
 		return nil, errors.New("error: empty conn")
 	}
-
-	jsonEncoder := json.NewEncoder(conn)
-	jsonDecoder := json.NewDecoder(conn)
+	handler := newConsumerHanlder(conn)
 
 	return &subscriber{
-		conn:        conn,
-		jsonEncoder: jsonEncoder,
-		jsonDecoder: jsonDecoder,
+		handler: handler,
 	}, nil
 }
 
@@ -44,15 +36,19 @@ func (s *subscriber) Subscribe(topicName string, identifier string) {
 		TopicName:  topicName,
 		Identifier: identifier,
 	}
-	fmt.Println(s.conn.LocalAddr().String())
-	fmt.Println(s.conn.RemoteAddr().String())
-	s.send(msg)
+
+	msgMarshalled := marsh.Marshall(msg)
+
+	s.handler.send(msgMarshalled)
 }
 
 func (s *subscriber) Receive() ([]byte, error) {
-	var response []byte
 
-	s.jsonDecoder.Decode(&response)
+	response, err := s.handler.receive()
+
+	if err != nil {
+		return nil, err
+	}
 
 	res := adapter.ResponseFromJson(response)
 
@@ -61,9 +57,4 @@ func (s *subscriber) Receive() ([]byte, error) {
 	}
 
 	return res.Body, nil
-}
-
-func (s *subscriber) send(msg models.Message) {
-	msgMarshalled := marsh.Marshall(msg)
-	s.jsonEncoder.Encode(msgMarshalled)
 }
