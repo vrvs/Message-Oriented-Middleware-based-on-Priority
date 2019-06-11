@@ -1,7 +1,6 @@
 package broker
 
 import (
-	"reflect"
 	"sync"
 )
 
@@ -11,7 +10,7 @@ type Topic struct {
 	Name        string
 	Lock        sync.RWMutex
 	Retry       bool
-	Chan        chan (interface{})
+	IsConn      bool
 }
 
 type Topics struct {
@@ -26,15 +25,14 @@ func NewTopics() *Topics {
 	}
 }
 
-func (t *Topics) GetTopicsName() []string {
+func (t *Topics) GetTopics() []*Topic {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
-	keys := reflect.ValueOf(t.topics).MapKeys()
-	strkeys := make([]string, len(keys))
-	for i := 0; i < len(keys); i++ {
-		strkeys[i] = keys[i].String()
+	topicsArr := make([]*Topic, 0, len(t.topics))
+	for _, value := range t.topics {
+		topicsArr = append(topicsArr, value)
 	}
-	return strkeys
+	return topicsArr
 }
 
 func (t *Topics) TopicExists(topicName string) bool {
@@ -58,9 +56,12 @@ func (t *Topics) GetTopic(topicName string) (*Topic, error) {
 func (t *Topics) AddTopic(topic *Topic) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	_, exist := t.topics[topic.Name]
+	top, exist := t.topics[topic.Name]
 	if exist {
-		return &ExistentTopic{}
+		top.MaxPriority = topic.MaxPriority
+		top.Retry = topic.Retry
+		top.IsConn = topic.IsConn
+		return nil
 	}
 	t.topics[topic.Name] = topic
 	return nil

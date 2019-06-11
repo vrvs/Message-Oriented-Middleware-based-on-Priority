@@ -5,9 +5,7 @@ import (
 	"Message-Oriented-Middleware-based-on-Priority/middleware/lib/models"
 	queueManager "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue"
 	priority "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/queue/priority"
-	retryManager "Message-Oriented-Middleware-based-on-Priority/middleware/server/manager/retry"
 	"encoding/json"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -16,21 +14,20 @@ import (
 type Broker struct {
 	topics       *Topics
 	queueManager *queueManager.QueueManager
-	retryManager *retryManager.RetryManager
 }
 
 func NewBroker() *Broker {
 	return &Broker{
 		topics:       NewTopics(),
 		queueManager: queueManager.NewQueueManager(),
-		retryManager: retryManager.NewRetryManager(),
 	}
 }
 
-func (b *Broker) Subscribe(subscriberConnection net.Conn, topicID string, identifier string) error {
-	topic, err := b.topics.GetTopic(topicID)
+func (b *Broker) Subscribe(subscriberConnection net.Conn, topicName string, identifier string) error {
+	topic, err := b.topics.GetTopic(topicName)
 	if err != nil {
-		return err
+		b.CreateTopic(topicName, 10, false)
+		topic, _ = b.topics.GetTopic(topicName)
 	}
 
 	sub := &Subscriber{
@@ -56,8 +53,8 @@ func (b *Broker) Publish(topicName string, messagePrioriy int, data []byte) erro
 func (b *Broker) Unsubscribe(subscriberID, topicID string) error {
 }
 */
-func (b *Broker) BroadcastTopic(topicName string) error {
-	topic, err := b.topics.GetTopic(topicName)
+func (b *Broker) BroadcastTopic(topic *Topic) error {
+	topic, err := b.topics.GetTopic(topic.Name)
 	if err != nil {
 		return err
 	}
@@ -66,12 +63,7 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 		return nil
 	}
 
-	var m interface{}
-	if topic.Retry {
-		m = <-topic.Chan
-	} else {
-		m, err = b.queueManager.Pop(topicName)
-	}
+	m, err := b.queueManager.Pop(topic.Name)
 	if err != nil {
 		return err
 	}
@@ -80,28 +72,44 @@ func (b *Broker) BroadcastTopic(topicName string) error {
 		err := s.Send(&models.Response{
 			Body: m.(*priority.Item).Value,
 		})
-		fmt.Println(err)
-		fmt.Println(s.conn)
-		fmt.Println(topic.Name)
 		if err != nil {
 			top, _ := b.topics.GetTopic(s.identifier)
 			if !b.topics.TopicExists(s.identifier) {
 				b.CreateTopic(s.identifier, topic.MaxPriority, true)
 				top, _ = b.topics.GetTopic(s.identifier)
 				top.AddSubscriber(s)
+			} else if top.IsConn {
+				top.IsConn = false
 			}
-			b.retryManager.Push(s.identifier, m, top.Chan)
+			b.queueManager.Push(s.identifier, m)
+		} else {
+			if !topic.IsConn {
+				topic.IsConn = true
+			}
 		}
 	}
 	return nil
 }
 
-func (b *Broker) Broadcast() {
+func (b *Broker) BroadcastConn() {
 	for {
-		time.Sleep(3000000000)
-		topics := b.topics.GetTopicsName()
+		topics := b.topics.GetTopics()
 		for i := 0; i < len(topics); i++ {
-			go b.BroadcastTopic(topics[i])
+			if topics[i].IsConn {
+				go b.BroadcastTopic(topics[i])
+			}
+		}
+	}
+}
+
+func (b *Broker) BroadcastNotConn() {
+	for {
+		time.Sleep(35000000000)
+		topics := b.topics.GetTopics()
+		for i := 0; i < len(topics); i++ {
+			if !topics[i].IsConn {
+				go b.BroadcastTopic(topics[i])
+			}
 		}
 	}
 }
@@ -114,7 +122,7 @@ func (b *Broker) CreateTopic(topicName string, maxPriority int, retry bool) erro
 		MaxPriority: maxPriority,
 		Lock:        sync.RWMutex{},
 		Retry:       retry,
-		Chan:        make(chan interface{}),
+		IsConn:      !retry,
 	}
 
 	err := b.topics.AddTopic(topic)
@@ -122,11 +130,6 @@ func (b *Broker) CreateTopic(topicName string, maxPriority int, retry bool) erro
 		return err
 	}
 
-	if retry {
-		b.retryManager.AddDuration(topicName, 1)
-		b.retryManager.CreateQueue(topicName)
-	} else {
-		b.queueManager.CreateQueue(topicName)
-	}
+	b.queueManager.CreateQueue(topicName)
 	return nil
 }
