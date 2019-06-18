@@ -41,7 +41,7 @@ func main() {
 	topic = strings.Replace(topic, "\n", "", -1)
 	fmt.Println("Write ur own identifier to consume:")
 	identifier, _ := reader.ReadString('\n')
-	identifier = strings.Replace(topic, "\n", "", -1)
+	identifier = strings.Replace(identifier, "\n", "", -1)
 
 	conn, _ := net.Dial("tcp", "localhost:5556")
 	subscriber, _ := consumer.NewSubscriber(conn)

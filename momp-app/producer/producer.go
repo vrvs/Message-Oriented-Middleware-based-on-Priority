@@ -68,7 +68,8 @@ func main() {
 		data := ProduceData()
 		publisher.Publish(topic, data)
 
-		fmt.Println("Published data on topic: ", topic, " with priority: ", data.Priority)
+		fmt.Print("Published data on topic:", topic)
+		fmt.Println(" with priority:", data.Priority)
 
 		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
 	}
